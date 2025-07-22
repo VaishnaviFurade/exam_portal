@@ -1,27 +1,57 @@
 import React, { useState } from 'react';
 import axios from '../axiosConfig';
+import {
+    Container,
+    Card,
+    Button,
+    Form,
+    Row,
+    Col,
+    Alert
+} from 'react-bootstrap';
 
 function CreateExam() {
     const [title, setTitle] = useState('');
-    const [questions, setQuestions] = useState([{ question: '', options: ['', '', '', ''], answer: '' }]);
+    const [description, setDescription] = useState('');
+    const [duration, setDuration] = useState(30);
+    const [password, setPassword] = useState('');
+    const [questions, setQuestions] = useState([
+        { question: '', options: ['', '', '', ''], answer: '' }
+    ]);
+    const [message, setMessage] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const createdBy = localStorage.getItem('userId');
+
+        if (!createdBy) return alert('❌ User not authenticated. Please log in again.');
+        if (duration < 1) return alert('❌ Duration must be at least 1 minute.');
+        if (questions.length === 0) return alert('❌ At least one question is required.');
+
         try {
             const token = localStorage.getItem('token');
-            await axios.post('/api/exams/create', { title, questions }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            alert('Exam created successfully!');
+
+            await axios.post(
+                '/exams/create',
+                { title, description, duration, password, questions, createdBy },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            setMessage('✅ Exam created successfully!');
+            setTitle('');
+            setDescription('');
+            setDuration(30);
+            setPassword('');
+            setQuestions([{ question: '', options: ['', '', '', ''], answer: '' }]);
         } catch (error) {
-            alert('Error creating exam');
+            console.error('Create Exam Error:', error.response?.data || error.message);
+            alert(error.response?.data?.error || '❌ Error creating exam');
         }
     };
 
     const handleQuestionChange = (index, field, value) => {
         const newQuestions = [...questions];
-        if (field === 'question') newQuestions[index].question = value;
-        if (field === 'answer') newQuestions[index].answer = value;
+        newQuestions[index][field] = value;
         setQuestions(newQuestions);
     };
 
@@ -35,24 +65,143 @@ function CreateExam() {
         setQuestions([...questions, { question: '', options: ['', '', '', ''], answer: '' }]);
     };
 
+    const removeQuestion = (index) => {
+        const newQuestions = [...questions];
+        newQuestions.splice(index, 1);
+        setQuestions(newQuestions.length > 0 ? newQuestions : [
+            { question: '', options: ['', '', '', ''], answer: '' }
+        ]);
+    };
+
     return (
-        <div>
-            <h2>Create New Exam</h2>
-            <form onSubmit={handleSubmit}>
-                <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Exam Title" required />
-                {questions.map((q, i) => (
-                    <div key={i}>
-                        <input value={q.question} onChange={e => handleQuestionChange(i, 'question', e.target.value)} placeholder="Question" />
-                        {q.options.map((opt, j) => (
-                            <input key={j} value={opt} onChange={e => handleOptionChange(i, j, e.target.value)} placeholder={`Option ${j + 1}`} />
+        <Container className="py-4">
+            <Card className="shadow-sm">
+                <Card.Body>
+                    <Card.Title className="mb-3">📝 Create New Exam</Card.Title>
+
+                    {message && <Alert variant="success">{message}</Alert>}
+
+                    <Form onSubmit={handleSubmit}>
+                        <Form.Group className="mb-3">
+                            <Form.Control
+                                type="text"
+                                placeholder="Exam Title"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                required
+                            />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3">
+                            <Form.Control
+                                type="text"
+                                placeholder="Exam Description"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                required
+                            />
+                        </Form.Group>
+
+                        <Row className="mb-3">
+                            <Col md={6}>
+                                <Form.Control
+                                    type="number"
+                                    placeholder="Duration (mins)"
+                                    value={duration}
+                                    onChange={(e) => setDuration(Number(e.target.value))}
+                                    min={1}
+                                    required
+                                />
+                            </Col>
+                            <Col md={6}>
+                                <Form.Control
+                                    type="text"
+                                    placeholder="Set Exam Password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                />
+                            </Col>
+                        </Row>
+
+                        {questions.map((q, i) => (
+                            <Card key={i} className="mb-4">
+                                <Card.Body>
+                                    <Card.Subtitle className="mb-3">
+                                        🧾 Question {i + 1}
+                                    </Card.Subtitle>
+
+                                    <Form.Group className="mb-2">
+                                        <Form.Control
+                                            type="text"
+                                            placeholder="Enter question"
+                                            value={q.question}
+                                            onChange={(e) =>
+                                                handleQuestionChange(i, 'question', e.target.value)
+                                            }
+                                            required
+                                        />
+                                    </Form.Group>
+
+                                    {q.options.map((opt, j) => (
+                                        <Form.Group key={j} className="mb-2">
+                                            <Form.Control
+                                                type="text"
+                                                placeholder={`Option ${j + 1}`}
+                                                value={opt}
+                                                onChange={(e) =>
+                                                    handleOptionChange(i, j, e.target.value)
+                                                }
+                                                required
+                                            />
+                                        </Form.Group>
+                                    ))}
+
+                                    <Form.Group className="mb-2">
+                                        <Form.Control
+                                            type="text"
+                                            placeholder="Correct Answer"
+                                            value={q.answer}
+                                            onChange={(e) =>
+                                                handleQuestionChange(i, 'answer', e.target.value)
+                                            }
+                                            required
+                                        />
+                                    </Form.Group>
+
+                                    {questions.length > 1 && (
+                                        <Button
+                                            variant="outline-danger"
+                                            size="sm"
+                                            onClick={() => removeQuestion(i)}
+                                        >
+                                            ❌ Delete Question
+                                        </Button>
+                                    )}
+                                </Card.Body>
+                            </Card>
                         ))}
-                        <input value={q.answer} onChange={e => handleQuestionChange(i, 'answer', e.target.value)} placeholder="Correct Answer" />
-                    </div>
-                ))}
-                <button type="button" onClick={addQuestion}>Add Question</button>
-                <button type="submit">Create Exam</button>
-            </form>
-        </div>
+
+                        <div className="d-grid gap-2">
+                            <Button
+                                variant="info"
+                                type="button"
+                                onClick={addQuestion}
+                            >
+                                ➕ Add Question
+                            </Button>
+
+                            <Button
+                                variant="primary"
+                                type="submit"
+                            >
+                                🚀 Create Exam
+                            </Button>
+                        </div>
+                    </Form>
+                </Card.Body>
+            </Card>
+        </Container>
     );
 }
 

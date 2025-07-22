@@ -3,21 +3,21 @@ const mongoose = require('mongoose');
 const userSchema = new mongoose.Schema({
     username: {
         type: String,
-        required: true,
+        required: [true, 'Username is required'],
         unique: true,
-        lowercase: true, // enforce lowercase for consistency
+        lowercase: true,
         trim: true
     },
     email: {
         type: String,
-        required: true,
+        required: [true, 'Email is required'],
         unique: true,
         lowercase: true,
         trim: true
     },
     password: {
         type: String,
-        required: true
+        required: [true, 'Password is required']
     },
     role: {
         type: String,
@@ -33,7 +33,9 @@ const userSchema = new mongoose.Schema({
         default: null
     }
 }, {
-    timestamps: true // adds createdAt and updatedAt
+    timestamps: true
 });
 
-module.exports = mongoose.model('User', userSchema);
+// ✅ Prevent OverwriteModelError
+const User = mongoose.models.User || mongoose.model('User', userSchema);
+module.exports = User;

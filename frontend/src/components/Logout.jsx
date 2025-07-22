@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { Button } from 'react-bootstrap';
 
 function Logout() {
   const navigate = useNavigate();
@@ -6,10 +7,14 @@ function Logout() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    navigate('/login'); // or your login page path
+    navigate('/login');
   };
 
-  return <button onClick={handleLogout}>Logout</button>;
+  return (
+    <Button variant="outline-danger" onClick={handleLogout}>
+      Logout
+    </Button>
+  );
 }
 
 export default Logout;

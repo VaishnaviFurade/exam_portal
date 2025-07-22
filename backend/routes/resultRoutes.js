@@ -3,13 +3,17 @@ const router = express.Router();
 
 const {
     submitExam,
-    getMyResults
+    getMyResults,
+    getAllResults // <-- this should be defined in your resultController.js
 } = require('../controllers/resultController');
 
-const { authMiddleware } = require('../middleware/authMiddleware'); // ✅ Correct destructuring
+const { authMiddleware, isAdmin } = require('../middleware/authMiddleware'); // ✅ Fixed import
 
-// ✅ Routes for students
+// ✅ Student Routes
 router.post('/submit', authMiddleware, submitExam);
 router.get('/my-results', authMiddleware, getMyResults);
+
+// ✅ Admin Route
+router.get('/all', authMiddleware, isAdmin, getAllResults);
 
 module.exports = router;
